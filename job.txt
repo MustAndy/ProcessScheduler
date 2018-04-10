@@ -1,0 +1,6 @@
+0	./timer 2	2
+1	./while1	3
+2	./timer 4	4
+3	./timer 2	2
+4	ls -R /	2
+15	./timer 2	2

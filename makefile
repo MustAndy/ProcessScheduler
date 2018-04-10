@@ -5,19 +5,17 @@
 #
 CC = gcc
 
-CCP = g++
-
-CFLAGS = #-Wall
+CFLAGS = -Wall
 
 OBJS = main.o scheduler.o
 
 main: $(OBJS)
-	$(CCP) $(CFLAGS) -o main $(OBJS)
+	$(CC) $(CFLAGS) -o main $(OBJS)
 
-main.o:main.cpp
-	$(CCP) $(CFLAGS) -c main.cpp
+main.o:header.h
+	$(CC) $(CFLAGS) -c main.c
 
-scheduler.o:scheduler.c
+scheduler.o:header.h
 	$(CC) $(CFLAGS) -c scheduler.c 
 	
 clean:
