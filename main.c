@@ -2,6 +2,7 @@
 
 int main()
 {
+    printf("hello");
     // JOB a = NULL;
     // a->ArrivalTime = 3;
     // a->DurationTime = 3;
