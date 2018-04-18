@@ -50,28 +50,8 @@ void bubbleSort(JOB arr[], int length)
     }
 }
 
-void RR(JOB arr[], int TimeQuota)
+void RR(JOB arr[], int JobCounter, int TimeQuota)
 {
-    if (arr[0] != NULL)
-        hasJob = 1;
-    int i = 0;
-    while (hasJob)
-    {
-        if (arr[i + 1] == NULL)
-        {
-            hasJob = FALSE;
-        }
-        else
-        {
-            i++;
-            if (timer < arr[i]->ArrivalTime)
-            {
-                int j = arr[i]->ArrivalTime - timer;
-                timer += ((arr[i]->ArrivalTime) - timer);
-                sleep(j);
-            }
-        }
-    }
 }
 
 void FCFS(JOB arr[])
@@ -81,8 +61,8 @@ void FCFS(JOB arr[])
     int i = 0;
     while (hasJob)
     {
-        arr[i]->ProcessID = fork();
-        if (arr[i]->ProcessID == 0)
+        pid_t process_id = fork();
+        if (process_id == 0)
         {
             printf("running %dth JOB\n", (i + 1));
             arr[i]->state = _PROCESS_RUNNING_;
@@ -95,7 +75,7 @@ void FCFS(JOB arr[])
         else
         {
             wait(NULL);
-            kill(arr[i]->ProcessID, SIGKILL);
+            kill(process_id, SIGKILL);
             printf("The %dth job has finished\n\n", (i + 1));
             arr[i]->state = _PROCESS_KILLED_;
             timer += arr[i]->DurationTime;
@@ -141,7 +121,7 @@ void scheduler()
     {
         printf("%5d  %20s  %8d\n", Joblist[i]->ArrivalTime, Joblist[i]->JobName, Joblist[i]->DurationTime);
     }
-    //RR(Joblist, 1);
+
     FCFS(Joblist);
     printf("\nArrival           Job content     State\n");
     for (i = 0; i < jobcounter; i++)

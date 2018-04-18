@@ -39,11 +39,10 @@ typedef struct _Job
     char JobName[256];
     char** Parameter;
     int state;
-    pid_t ProcessID;
 } Job, *JOB;
 
 void scheduler();
-void RR(JOB arr[], int TimeQuota);
+void RR(JOB arr[], int JobCounter, int TimeQuota);
 void FCFS(JOB arr[]);
 void OutputSchedulingReport(int JobNo, int state);
 void FCFSPinrting(int sig);
