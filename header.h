@@ -46,8 +46,9 @@ void scheduler();
 void RR(JOB arr[], int TimeQuota);
 void FCFS(JOB arr[]);
 void OutputSchedulingReport(int JobNo, int state);
-void FCFSPinrting(int sig);
+void PauseProcess(int sig);
 extern JOB* Joblist; //0,1,2,3,4...
 extern int timer;
 extern FILE* outputFile;
 extern Boolean hasJob;
+void printJobState();

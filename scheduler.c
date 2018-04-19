@@ -1,6 +1,11 @@
 #include "header.h"
 int timer = 0;
 Boolean hasJob = 0;
+void PauseProcess(int sig)
+{
+    printf("The Process has been paused.\n");
+}
+
 void OutputSchedulingReport(int JobNo, int state)
 {
     // #define _PROCESS_CREATED_ 0;
@@ -49,26 +54,129 @@ void bubbleSort(JOB arr[], int length)
         }
     }
 }
-
+void handler(int sig)
+{
+}
 void RR(JOB arr[], int TimeQuota)
 {
     if (arr[0] != NULL)
         hasJob = 1;
     int i = 0;
+    int j = 0;
+
     while (hasJob)
     {
-        if (arr[i + 1] == NULL)
+        pid_t ProcessControler = vfork();
+        if (ProcessControler == 0)
         {
-            hasJob = FALSE;
+            if (arr[i]->ProcessID == 0)
+            {
+                arr[i]->ProcessID = fork();
+                if (arr[i]->ProcessID == 0)
+                {
+                    printf("running %dth JOB\n", (i + 1));
+                    execl(arr[i]->JobName, arr[i]->JobName, NULL);
+                    exit(0);
+                }
+                else
+                {
+                    int RemainingTime = (arr[i]->DurationTime - arr[i]->RunningTime);
+                    if (RemainingTime >= TimeQuota)
+                    {
+                        arr[i]->RunningTime += TimeQuota;
+                        timer += TimeQuota;
+                        kill(arr[i]->ProcessID, SIGCONT);
+                        sleep(TimeQuota);
+                        kill(arr[i]->ProcessID, SIGSTOP);
+                    }
+                    else if (RemainingTime == 0)
+                    {
+                        kill(arr[i]->ProcessID, SIGKILL);
+                    }
+                    else
+                    {
+                        timer += RemainingTime;
+                        kill(arr[i]->ProcessID, SIGCONT);
+                        sleep(RemainingTime);
+                        arr[i]->RunningTime += RemainingTime;
+                        kill(arr[i]->ProcessID, SIGKILL);
+                    }
+                    exit(0);
+                }
+            }
+            else
+            {
+                int RemainingTime = (arr[i]->DurationTime - arr[i]->RunningTime);
+                //printf("remaining: %d\n", RemainingTime);
+                if (RemainingTime >= TimeQuota)
+                {
+                    timer += TimeQuota;
+                    printf("running %dth JOB\n", (i + 1));
+                    arr[i]->RunningTime += TimeQuota;
+                    kill(arr[i]->ProcessID, SIGCONT);
+                    sleep(TimeQuota);
+                    kill(arr[i]->ProcessID, SIGSTOP);
+                }
+                else if (RemainingTime == 0)
+                {
+                    kill(arr[i]->ProcessID, SIGKILL);
+                }
+                else
+                {
+                    timer += RemainingTime;
+                    printf("running %dth JOB\n", (i + 1));
+                    kill(arr[i]->ProcessID, SIGCONT);
+                    sleep(RemainingTime);
+                    arr[i]->RunningTime += RemainingTime;
+                    kill(arr[i]->ProcessID, SIGKILL);
+                }
+                exit(0);
+            }
         }
         else
         {
-            i++;
-            if (timer < arr[i]->ArrivalTime)
+            wait(NULL);
+            //printJobState();
+            //printf("timer:%d i: %d\n ", timer, i);
+            if (arr[i + 1] != NULL)
             {
-                int j = arr[i]->ArrivalTime - timer;
-                timer += ((arr[i]->ArrivalTime) - timer);
-                sleep(j);
+                if (timer < arr[i + 1]->ArrivalTime)
+                {
+                    for (j = 0; j <= i; j++)
+                    {
+                        if (arr[j]->RunningTime != arr[j]->DurationTime)
+                        {
+                            i = j;
+                            break;
+                        }
+                    }
+                    if (arr[i]->RunningTime == arr[i]->DurationTime)
+                    {
+                        sleep(1);
+                        timer += 1;
+                    }
+                }
+                else
+                {
+                    ++i;
+                }
+            }
+            else
+            {
+                for (j = i + 1; j != i; j++)
+                {
+                    if (arr[j] == NULL)
+                    {
+                        j = 0;
+                    }
+                    if (arr[j]->RunningTime != arr[j]->DurationTime)
+                    {
+                        i = j;
+                        break;
+                    }
+                }
+                if (arr[i]->RunningTime == arr[i]->DurationTime)
+                    hasJob = 0;
             }
         }
     }
@@ -81,13 +189,12 @@ void FCFS(JOB arr[])
     int i = 0;
     while (hasJob)
     {
-        arr[i]->ProcessID = fork();
+        arr[i]->ProcessID = vfork();
         if (arr[i]->ProcessID == 0)
         {
             printf("running %dth JOB\n", (i + 1));
             arr[i]->state = _PROCESS_RUNNING_;
             OutputSchedulingReport((i + 1), arr[i]->state);
-
             alarm(arr[i]->DurationTime);
             execl(arr[i]->JobName, arr[i]->JobName, NULL);
             exit(0);
@@ -98,6 +205,7 @@ void FCFS(JOB arr[])
             kill(arr[i]->ProcessID, SIGKILL);
             printf("The %dth job has finished\n\n", (i + 1));
             arr[i]->state = _PROCESS_KILLED_;
+            arr[i]->RunningTime = arr[i]->DurationTime;
             timer += arr[i]->DurationTime;
             OutputSchedulingReport((i + 1), arr[i]->state);
             if (arr[i + 1] == NULL)
@@ -120,9 +228,9 @@ void FCFS(JOB arr[])
 
 void scheduler()
 {
-    int a[6] = { 4, 3, 2, 1, 0, 15 }, b[6] = { 0, 2, 4, 3, 2, 2 };
+    int a[6] = { 4, 3, 2, 1, 0, 20 }, b[6] = { 5, 4, 3, 2, 1, 6 };
     //char c[6][10] = { "ls -R / 2", "./timer 2", "./timer 4", "./while1", "./timer 2", "./timer 2" };
-    char c[6][10] = { "ls", "./while1", "./while1", "./while1", "./while1", "./while1" };
+    char c[6][10] = { "./while1", "./while1", "./while1", "./while1", "./while1", "./while1" };
     int jobcounter = 6;
     int i;
     Joblist = (JOB*)malloc(jobcounter * sizeof(struct _Job));
@@ -136,16 +244,18 @@ void scheduler()
         Joblist[i]->state = _PROCESS_CREATED_;
     }
     bubbleSort(Joblist, jobcounter);
-    printf("\nArrival           Job content     Duration\n");
-    for (i = 0; i < jobcounter; i++)
+    printJobState();
+    RR(Joblist, 2);
+    //FCFS(Joblist);
+    printJobState();
+}
+
+void printJobState()
+{
+    printf("\nArrival %25c JobContent %9c JobNo %5c State %5c ProcessID %5c ArrivalTime %5c Duration %5c RunningTime \n", ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    int i;
+    for (i = 0; Joblist[i] != NULL; i++)
     {
-        printf("%5d  %20s  %8d\n", Joblist[i]->ArrivalTime, Joblist[i]->JobName, Joblist[i]->DurationTime);
-    }
-    //RR(Joblist, 1);
-    FCFS(Joblist);
-    printf("\nArrival           Job content     State\n");
-    for (i = 0; i < jobcounter; i++)
-    {
-        printf("%5d  %20s  %8d\n", Joblist[i]->ArrivalTime, Joblist[i]->JobName, Joblist[i]->state);
+        printf("%5d%40s%15d%15d%15d%15d%15d%15d\n", Joblist[i]->ArrivalTime, Joblist[i]->JobName, (i + 1), Joblist[i]->state, Joblist[i]->ProcessID, Joblist[i]->ArrivalTime, Joblist[i]->DurationTime, Joblist[i]->RunningTime);
     }
 }
