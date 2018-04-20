@@ -59,6 +59,7 @@ void handler(int sig)
 }
 void RR(JOB arr[], int TimeQuota)
 {
+    int status;
     if (arr[0] != NULL)
         hasJob = 1;
     int i = 0;
@@ -72,34 +73,51 @@ void RR(JOB arr[], int TimeQuota)
             if (arr[i]->ProcessID == 0)
             {
                 arr[i]->ProcessID = fork();
+
                 if (arr[i]->ProcessID == 0)
                 {
+                    kill(getpid(), SIGTSTP);
+                    //sighold
+                    //kill(getppid(), SIGCHLD);
+                    //signal(SIGCONT, PauseProcess);
                     printf("running %dth JOB\n", (i + 1));
                     execl(arr[i]->JobName, arr[i]->JobName, NULL);
                     exit(0);
                 }
                 else
                 {
-                    int RemainingTime = (arr[i]->DurationTime - arr[i]->RunningTime);
-                    if (RemainingTime >= TimeQuota)
+                    //waitpid(arr[i]->ProcessID, &status, 0);
+                    //waitpid(arr[i]->ProcessID, 0);
+                    //wait(NULL);
+                    printf("I go first~\n");
+                    int RemainingTime1 = (arr[i]->DurationTime - arr[i]->RunningTime);
+                    if (RemainingTime1 > TimeQuota)
                     {
+                        arr[i]->state = _PROCESS_RUNNING_;
+                        OutputSchedulingReport((i + 1), arr[i]->state);
                         arr[i]->RunningTime += TimeQuota;
                         timer += TimeQuota;
+
                         kill(arr[i]->ProcessID, SIGCONT);
                         sleep(TimeQuota);
+                        //nanosleep(TimeQuota * 1000 - 100);
                         kill(arr[i]->ProcessID, SIGSTOP);
-                    }
-                    else if (RemainingTime == 0)
-                    {
-                        kill(arr[i]->ProcessID, SIGKILL);
+                        arr[i]->state = _PROCESS_PAUSE_;
+                        OutputSchedulingReport((i + 1), arr[i]->state);
                     }
                     else
                     {
-                        timer += RemainingTime;
+                        arr[i]->state = _PROCESS_RUNNING_;
+                        OutputSchedulingReport((i + 1), arr[i]->state);
+                        timer += RemainingTime1;
                         kill(arr[i]->ProcessID, SIGCONT);
-                        sleep(RemainingTime);
-                        arr[i]->RunningTime += RemainingTime;
+                        sleep(RemainingTime1);
                         kill(arr[i]->ProcessID, SIGKILL);
+                        arr[i]->state = _PROCESS_KILLED_;
+                        OutputSchedulingReport((i + 1), arr[i]->state);
+
+                        //OutputSchedulingReport((i + 1), arr[i]->state);
+                        arr[i]->RunningTime += RemainingTime1;
                     }
                     exit(0);
                 }
@@ -110,25 +128,35 @@ void RR(JOB arr[], int TimeQuota)
                 //printf("remaining: %d\n", RemainingTime);
                 if (RemainingTime >= TimeQuota)
                 {
+                    arr[i]->state = _PROCESS_CONTINUE_;
+                    OutputSchedulingReport((i + 1), arr[i]->state);
                     timer += TimeQuota;
                     printf("running %dth JOB\n", (i + 1));
                     arr[i]->RunningTime += TimeQuota;
                     kill(arr[i]->ProcessID, SIGCONT);
                     sleep(TimeQuota);
                     kill(arr[i]->ProcessID, SIGSTOP);
+                    arr[i]->state = _PROCESS_KILLED_;
+                    OutputSchedulingReport((i + 1), arr[i]->state);
                 }
                 else if (RemainingTime == 0)
                 {
                     kill(arr[i]->ProcessID, SIGKILL);
+                    arr[i]->state = _PROCESS_KILLED_;
+                    OutputSchedulingReport((i + 1), arr[i]->state);
                 }
                 else
                 {
+                    arr[i]->state = _PROCESS_CONTINUE_;
+                    OutputSchedulingReport((i + 1), arr[i]->state);
                     timer += RemainingTime;
                     printf("running %dth JOB\n", (i + 1));
                     kill(arr[i]->ProcessID, SIGCONT);
                     sleep(RemainingTime);
                     arr[i]->RunningTime += RemainingTime;
                     kill(arr[i]->ProcessID, SIGKILL);
+                    arr[i]->state = _PROCESS_KILLED_;
+                    OutputSchedulingReport((i + 1), arr[i]->state);
                 }
                 exit(0);
             }
@@ -152,8 +180,9 @@ void RR(JOB arr[], int TimeQuota)
                     }
                     if (arr[i]->RunningTime == arr[i]->DurationTime)
                     {
-                        sleep(1);
-                        timer += 1;
+                        sleep(arr[i + 1]->ArrivalTime - timer);
+                        timer += ((arr[i + 1]->ArrivalTime) - timer);
+                        ++i;
                     }
                 }
                 else
@@ -245,7 +274,7 @@ void scheduler()
     }
     bubbleSort(Joblist, jobcounter);
     printJobState();
-    RR(Joblist, 2);
+    RR(Joblist, 3);
     //FCFS(Joblist);
     printJobState();
 }
