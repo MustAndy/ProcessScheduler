@@ -1,6 +1,7 @@
-0	./timer 2	2
-1	./while1	3
-2	./timer 4	4
-3	./timer 2	2
-4	ls -R /	2
-15	./timer 2	2
+0	sleep 2 &	2
+1	ping www.baidu.com	3
+2	./while1	4
+3	./while1	2
+4	./while1	5
+20	./while1	2
+25	ls	0

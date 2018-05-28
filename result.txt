@@ -1,18 +1,22 @@
   0 sec: Job 1 run
-  1 sec: Job 1 terminated
-  1 sec: Job 2 run
-  3 sec: Job 2 terminated
-  3 sec: Job 3 run
-  6 sec: Job 3 terminated
+  2 sec: Job 1 terminated
+
+  2 sec: Job 2 run
+  4 sec: Job 2 suspended
+
+  4 sec: Job 3 run
+  6 sec: Job 3 suspended
+
   6 sec: Job 4 run
-  9 sec: Job 4 suspended
-  9 sec: Job 5 run
- 12 sec: Job 5 suspended
- 12 sec: Job 4 continue
- 13 sec: Job 4 terminated
+  8 sec: Job 4 terminated
+
+  8 sec: Job 5 run
+ 10 sec: Job 5 suspended
+
+ 10 sec: Job 2 continue
+ 11 sec: Job 2 terminated
+
+ 11 sec: Job 3 continue
+ 13 sec: Job 3 terminated
+
  13 sec: Job 5 continue
- 15 sec: Job 5 terminated
- 20 sec: Job 6 run
- 23 sec: Job 6 suspended
- 23 sec: Job 6 continue
- 26 sec: Job 6 terminated
